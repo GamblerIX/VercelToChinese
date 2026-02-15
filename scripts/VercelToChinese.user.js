@@ -1,17 +1,16 @@
 // ==UserScript==
 // @name         Vercel 汉化脚本 - 中文化界面
 // @namespace    https://github.com/GamblerIX/VercelToChinese
-// @version      0.3.0
-// @description  将 Vercel 界面翻译为中文（词库可独立更新，增量监听与分片处理）。
+// @version      1.3.0
+// @description  将 Vercel 界面翻译为中文。
 // @author       GamblerIX
 // @match        *://vercel.com/*
 // @match        *://*.vercel.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=vercel.com
 // @grant        GM_xmlhttpRequest
-// @connect      cdn.jsdelivr.net
 // @connect      raw.githubusercontent.com
 // @run-at       document-idle
-// @license      AGPL-3.0-or-later
+// @license      AGPL-3.0
 // @downloadURL  https://raw.githubusercontent.com/GamblerIX/VercelToChinese/main/scripts/VercelToChinese.user.js
 // @updateURL    https://raw.githubusercontent.com/GamblerIX/VercelToChinese/main/scripts/VercelToChinese.user.js
 // ==/UserScript==
@@ -23,7 +22,6 @@
     window.__VERCEL_TO_CHINESE_LOADED__ = true;
 
     const DEFAULT_DICT_URLS = [
-        'https://cdn.jsdelivr.net/gh/GamblerIX/VercelToChinese@main/i18n/zh-cn.json',
         'https://raw.githubusercontent.com/GamblerIX/VercelToChinese/main/i18n/zh-cn.json',
     ];
 
