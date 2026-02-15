@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vercel 汉化脚本 - 中文化界面
 // @namespace    https://github.com/GamblerIX/VercelToChinese
-// @version      1.4.0
+// @version      1.5.1
 // @description  将 Vercel 界面翻译为中文。
 // @author       GamblerIX
 // @match        *://vercel.com/*
@@ -11,6 +11,7 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
+// @grant        GM_setClipboard
 // @connect      raw.githubusercontent.com
 // @run-at       document-idle
 // @license      AGPL-3.0
@@ -40,7 +41,6 @@
         'TEXTAREA',
         'CODE',
         'PRE',
-        'INPUT',
         'SVG',
         'PATH',
         'NOSCRIPT',
@@ -54,7 +54,6 @@
         'script',
         'style',
         'textarea',
-        'input',
         '[contenteditable="true"]',
         '.monaco-editor',
         '.shiki',
@@ -119,6 +118,9 @@
         });
         register('强制更新词库', () => {
             forceUpdateDict();
+        });
+        register('抓取当前页面词条到剪切板', () => {
+            exportTermsToClipboard();
         });
     }
 
@@ -200,6 +202,32 @@
         return text.replace(/\xa0|[\s]+/g, ' ').trim();
     }
 
+    function isExtractableText(text) {
+        if (shouldSkipText(text)) return false;
+        const key = normalizeKey(text);
+        if (!key) return false;
+        if (key.length > 120) return false;
+        return true;
+    }
+
+    function isExtractableHeadline(text) {
+        if (!text) return false;
+        const key = normalizeKey(text);
+        if (!key) return false;
+        if (key.length === 1) return false;
+        if (key.length > 80) return false;
+        if (!/[a-zA-Z]/.test(key)) return false;
+        if (/^[\u4e00-\u9fff]+$/.test(key)) return false;
+        if (/\d{3,}/.test(key)) return false;
+        if (/[<>\[\]{}=\\]/.test(key)) return false;
+        if (key.includes('http') || key.includes('@') || key.includes('var(') || key.includes('/')) return false;
+        if (/^avatar for /i.test(key)) return false;
+        if (/logo$/i.test(key) || / logo$/i.test(key)) return false;
+        const words = key.split(' ').filter(Boolean);
+        if (words.length > 8) return false;
+        return true;
+    }
+
     const MISS = Symbol('miss');
     const translationCache = new Map();
     const MAX_CACHE_SIZE = 2000;
@@ -223,6 +251,7 @@
         if (translationCache.has(key)) {
             const cached = translationCache.get(key);
             if (cached === MISS) return null;
+            if (typeof cached === 'string' && !cached.trim()) return null;
             const bilingualText = bilingualEnabled ? `${cached}（${trimmed}）` : cached;
             return text.replace(trimmed, bilingualText);
         }
@@ -243,6 +272,10 @@
         }
 
         if (typeof translated !== 'string') {
+            cacheSet(key, MISS);
+            return null;
+        }
+        if (!translated.trim()) {
             cacheSet(key, MISS);
             return null;
         }
@@ -399,6 +432,62 @@
         bilingualEnabled = !bilingualEnabled;
         writeSetting(SETTINGS_KEY_BILINGUAL, bilingualEnabled);
         retranslateAll();
+    }
+
+    function extractTermsFromDocument() {
+        const terms = new Set();
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+        let node;
+        while ((node = walker.nextNode())) {
+            if (isInIgnoredArea(node)) continue;
+            const text = node.nodeValue;
+            if (!isExtractableText(text)) continue;
+            terms.add(normalizeKey(text));
+        }
+
+        for (const attr of ATTRS) {
+            const elements = document.querySelectorAll(`[${attr}]`);
+            for (const el of elements) {
+                if (el.isContentEditable) continue;
+                if (el.matches && el.matches(IGNORE_SELECTOR)) continue;
+                const val = el.getAttribute(attr);
+                if (!isExtractableText(val)) continue;
+                terms.add(normalizeKey(val));
+            }
+        }
+
+        return Array.from(terms).sort((a, b) => a.localeCompare(b));
+    }
+
+    async function copyTextToClipboard(text) {
+        if (typeof GM_setClipboard === 'function') {
+            GM_setClipboard(text);
+            return true;
+        }
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return ok;
+    }
+
+    async function exportTermsToClipboard() {
+        if (!document.body) return;
+        const terms = extractTermsFromDocument();
+        const result = {};
+        for (const term of terms) result[term] = '';
+        const payload = JSON.stringify(result, null, 2);
+        await copyTextToClipboard(payload);
+        console.log(`[VercelToChinese] 已抓取 ${terms.length} 个词条并复制到剪切板。`);
     }
 
     async function forceUpdateDict() {
