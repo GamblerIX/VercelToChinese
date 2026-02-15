@@ -6,7 +6,7 @@
 
 ## 安装与启用
 
-- 推荐安装脚本（点击会触发脚本管理器安装）：[VercelToChinese.user.js](https://raw.githubusercontent.com/GamblerIX/VercelToChinese/main/scripts/VercelToChinese.user.js)
+- 点击会触发脚本管理器安装：[VercelToChinese.user.js](https://raw.githubusercontent.com/GamblerIX/VercelToChinese/main/scripts/VercelToChinese.user.js)
 
 ## 开发
 
@@ -31,4 +31,3 @@
 [Vercel 汉化脚本 - 中文化界面](https://greasyfork.org/zh-CN/scripts/564229-vercel-%E6%B1%89%E5%8C%96%E8%84%9A%E6%9C%AC-%E4%B8%AD%E6%96%87%E5%8C%96%E7%95%8C%E9%9D%A2)
 
 [github-chinese](https://github.com/maboloshi/github-chinese)
-
