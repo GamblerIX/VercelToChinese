@@ -12,17 +12,11 @@
 
 - 修改脚本：`scripts/VercelToChinese.user.js`
 - 修改词库：`i18n/zh-cn.json`
-- 本地快速去重（可选）：`python scripts/python/autoremove.py i18n/zh-cn.json`
 
 ## 安全与许可证
 
 - 本项目不包含账号收集/上传等逻辑，更多说明见 [安全与许可证](docs/repowiki/security-and-license.md)。
 - 仓库许可证为 AGPL-3.0（详见 [LICENSE](LICENSE)）。
-
-## 开发文档
-
-- 完整说明见 [RepoWiki](docs/repowiki/index.md)。
-
 
 ## 鸣谢
 
