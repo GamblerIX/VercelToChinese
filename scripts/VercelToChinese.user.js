@@ -1,13 +1,16 @@
 // ==UserScript==
 // @name         Vercel 汉化脚本 - 中文化界面
 // @namespace    https://github.com/GamblerIX/VercelToChinese
-// @version      1.3.0
+// @version      1.4.0
 // @description  将 Vercel 界面翻译为中文。
 // @author       GamblerIX
 // @match        *://vercel.com/*
 // @match        *://*.vercel.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=vercel.com
 // @grant        GM_xmlhttpRequest
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_registerMenuCommand
 // @connect      raw.githubusercontent.com
 // @run-at       document-idle
 // @license      AGPL-3.0
@@ -24,6 +27,12 @@
     const DEFAULT_DICT_URLS = [
         'https://raw.githubusercontent.com/GamblerIX/VercelToChinese/main/i18n/zh-cn.json',
     ];
+
+    const SETTINGS_KEY_BILINGUAL = 'vercel_to_chinese_bilingual';
+
+    let currentDict = null;
+    let bilingualEnabled = false;
+    let observer = null;
 
     const IGNORE_TAGS = new Set([
         'STYLE',
@@ -67,6 +76,52 @@
         return !!value && typeof value === 'object' && !Array.isArray(value);
     }
 
+    function readSetting(key, defaultValue) {
+        if (typeof GM_getValue === 'function') return GM_getValue(key, defaultValue);
+        if (typeof GM !== 'undefined' && GM && typeof GM.getValue === 'function') {
+            GM.getValue(key, defaultValue).then((val) => {
+                if (typeof val === 'boolean') {
+                    bilingualEnabled = val;
+                    retranslateAll();
+                }
+            });
+            return defaultValue;
+        }
+        const raw = localStorage.getItem(key);
+        if (raw === null) return defaultValue;
+        if (raw === 'true') return true;
+        if (raw === 'false') return false;
+        return defaultValue;
+    }
+
+    function writeSetting(key, value) {
+        if (typeof GM_setValue === 'function') {
+            GM_setValue(key, value);
+            return;
+        }
+        if (typeof GM !== 'undefined' && GM && typeof GM.setValue === 'function') {
+            GM.setValue(key, value);
+            return;
+        }
+        localStorage.setItem(key, String(value));
+    }
+
+    function registerMenuCommands() {
+        const register =
+            typeof GM_registerMenuCommand === 'function'
+                ? GM_registerMenuCommand
+                : typeof GM !== 'undefined' && GM && typeof GM.registerMenuCommand === 'function'
+                  ? GM.registerMenuCommand
+                  : null;
+        if (!register) return;
+        register('切换双语模式', () => {
+            toggleBilingualMode();
+        });
+        register('强制更新词库', () => {
+            forceUpdateDict();
+        });
+    }
+
     function gmGetText(url) {
         return new Promise((resolve, reject) => {
             const gm = typeof GM !== 'undefined' && GM && typeof GM.xmlHttpRequest === 'function' ? GM : null;
@@ -102,8 +157,8 @@
         });
     }
 
-    async function loadDictObject() {
-        if (isPlainObject(window.VERCEL_I18N_DATA) && Object.keys(window.VERCEL_I18N_DATA).length > 0) {
+    async function loadDictObject(force) {
+        if (!force && isPlainObject(window.VERCEL_I18N_DATA) && Object.keys(window.VERCEL_I18N_DATA).length > 0) {
             return window.VERCEL_I18N_DATA;
         }
 
@@ -111,12 +166,22 @@
             try {
                 const raw = await gmGetText(url);
                 const data = JSON.parse(raw);
-                if (isPlainObject(data)) return data;
+                if (isPlainObject(data)) {
+                    window.VERCEL_I18N_DATA = data;
+                    return data;
+                }
             } catch {
             }
         }
 
         return {};
+    }
+
+    async function ensureDict(force) {
+        const dictObj = await loadDictObject(force);
+        if (!isPlainObject(dictObj) || Object.keys(dictObj).length === 0) return null;
+        currentDict = new Map(Object.entries(dictObj));
+        return currentDict;
     }
 
     function shouldSkipText(text) {
@@ -147,8 +212,9 @@
         translationCache.set(key, value);
     }
 
-    function translateText(text, dict) {
+    function translateText(text) {
         if (shouldSkipText(text)) return null;
+        if (!currentDict) return null;
 
         const trimmed = text.trim();
         const key = normalizeKey(trimmed);
@@ -157,10 +223,11 @@
         if (translationCache.has(key)) {
             const cached = translationCache.get(key);
             if (cached === MISS) return null;
-            return text.replace(trimmed, cached);
+            const bilingualText = bilingualEnabled ? `${cached}（${trimmed}）` : cached;
+            return text.replace(trimmed, bilingualText);
         }
 
-        let translated = dict.get(key);
+        let translated = currentDict.get(key);
         if (translated === undefined && (key.includes(' ') || /\d/.test(key))) {
             for (const rule of REGEX_RULES) {
                 if (rule.re.test(key)) {
@@ -181,7 +248,8 @@
         }
 
         cacheSet(key, translated);
-        return text.replace(trimmed, translated);
+        const bilingualText = bilingualEnabled ? `${translated}（${trimmed}）` : translated;
+        return text.replace(trimmed, bilingualText);
     }
 
     function isInIgnoredArea(node) {
@@ -191,7 +259,7 @@
         return !!el.closest(IGNORE_SELECTOR);
     }
 
-    function processNode(node, dict) {
+    function processNode(node) {
         if (!node) return;
 
         if (node.nodeType === Node.ELEMENT_NODE) {
@@ -202,7 +270,7 @@
             for (const attr of ATTRS) {
                 if (!el.hasAttribute(attr)) continue;
                 const val = el.getAttribute(attr);
-                const translated = translateText(val, dict);
+                const translated = translateText(val);
                 if (translated !== null) el.setAttribute(attr, translated);
             }
             return;
@@ -211,13 +279,13 @@
         if (node.nodeType === Node.TEXT_NODE) {
             if (isInIgnoredArea(node)) return;
             const val = node.nodeValue;
-            const translated = translateText(val, dict);
+            const translated = translateText(val);
             if (translated !== null) node.nodeValue = translated;
         }
     }
 
     const nodeQueue = [];
-    const queued = new WeakSet();
+    let queued = new WeakSet();
     let isProcessing = false;
 
     function enqueue(node) {
@@ -227,9 +295,10 @@
         nodeQueue.push(node);
     }
 
-    function scheduleProcessing(dict) {
+    function scheduleProcessing() {
         if (isProcessing) return;
         if (nodeQueue.length === 0) return;
+        if (!currentDict) return;
 
         isProcessing = true;
 
@@ -244,7 +313,7 @@
                     if (!node) continue;
                     if (node !== document.body && !node.isConnected) continue;
 
-                    processNode(node, dict);
+                    processNode(node);
 
                     if (node.nodeType === Node.ELEMENT_NODE) {
                         const el = node;
@@ -259,14 +328,15 @@
                 }
 
                 isProcessing = false;
-                if (nodeQueue.length > 0) scheduleProcessing(dict);
+                if (nodeQueue.length > 0) scheduleProcessing();
             },
             { timeout: 2000 }
         );
     }
 
-    function initObserver(dict) {
-        const observer = new MutationObserver((mutations) => {
+    function initObserver() {
+        if (observer) return;
+        observer = new MutationObserver((mutations) => {
             let hasChanges = false;
 
             for (const mutation of mutations) {
@@ -288,7 +358,7 @@
                 }
             }
 
-            if (hasChanges) scheduleProcessing(dict);
+            if (hasChanges) scheduleProcessing();
         });
 
         observer.observe(document.body, {
@@ -300,7 +370,7 @@
         });
     }
 
-    function init(dict) {
+    function init() {
         const walker = document.createTreeWalker(
             document.body,
             NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
@@ -308,21 +378,52 @@
         );
         let node;
         while ((node = walker.nextNode())) enqueue(node);
-        scheduleProcessing(dict);
-        initObserver(dict);
+        scheduleProcessing();
+        initObserver();
     }
+
+    function retranslateAll() {
+        if (!currentDict || !document.body) return;
+        queued = new WeakSet();
+        const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+            null
+        );
+        let node;
+        while ((node = walker.nextNode())) enqueue(node);
+        scheduleProcessing();
+    }
+
+    function toggleBilingualMode() {
+        bilingualEnabled = !bilingualEnabled;
+        writeSetting(SETTINGS_KEY_BILINGUAL, bilingualEnabled);
+        retranslateAll();
+    }
+
+    async function forceUpdateDict() {
+        const dict = await ensureDict(true);
+        if (!dict) {
+            console.error('[VercelToChinese] 词库为空，未执行翻译。');
+            return;
+        }
+        translationCache.clear();
+        retranslateAll();
+    }
+
+    bilingualEnabled = !!readSetting(SETTINGS_KEY_BILINGUAL, false);
+    registerMenuCommands();
 
     async function main() {
         if (!document.body) return;
 
-        const dictObj = await loadDictObject();
-        if (!isPlainObject(dictObj) || Object.keys(dictObj).length === 0) {
+        const dict = await ensureDict(false);
+        if (!dict) {
             console.error('[VercelToChinese] 词库为空，未执行翻译。');
             return;
         }
 
-        const dict = new Map(Object.entries(dictObj));
-        init(dict);
+        init();
     }
 
     if (document.readyState === 'loading') {
