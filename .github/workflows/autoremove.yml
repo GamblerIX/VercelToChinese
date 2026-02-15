@@ -1,0 +1,1 @@
+# 每次收到手动推送后自动调用../../scripts/python/autoremove.py对../../i18n/zh-cn.json进行去重并推送提交回仓库

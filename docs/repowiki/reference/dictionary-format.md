@@ -11,6 +11,8 @@
 
 仓库内示例：`i18n/zh-cn.json`。
 
+如果你希望将 `i18n/zh-cn.json` 作为主要维护入口，并同步给不同脚本变体使用，参考 [词库同步与工作流](../howto/sync-dictionary.md)。
+
 ## 空字符串与未命中
 
 不同脚本变体对“空字符串译文”与“未命中”处理方式可能不同：
@@ -29,4 +31,3 @@
 `old2.user.js` 通过外部脚本注入全局变量 `window.VERCEL_I18N_DATA`，其结构等价于一个普通的键值对象：
 
 - `window.VERCEL_I18N_DATA["Overview"] === "概览"`
-

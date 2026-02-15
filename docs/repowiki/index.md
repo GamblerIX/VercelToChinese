@@ -15,6 +15,7 @@ VercelToChinese 是一个用于将 Vercel 控制台与相关页面英文文案�
   - [安装与启用](quickstart/install.md)
 - How-to
   - [新增/修正翻译](howto/add-translation.md)
+  - [词库同步与工作流](howto/sync-dictionary.md)
   - [发布与分发](howto/release.md)
 - 解释
   - [实现原理](explanation/architecture.md)
@@ -25,4 +26,3 @@ VercelToChinese 是一个用于将 Vercel 控制台与相关页面英文文案�
 - 其它
   - [安全与许可证](security-and-license.md)
   - [故障排查](troubleshooting.md)
-

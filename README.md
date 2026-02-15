@@ -6,10 +6,11 @@
 
 ## 一键下载并跳转安装
 
+请先阅读 [安装与启用](docs/repowiki/quickstart/install.md)。
+
 
 ## 词库维护
 
-词库维护与贡献方式请阅读 [新增/修正翻译](docs/repowiki/howto/add-translation.md)。
 
 更多说明见 [RepoWiki](docs/repowiki/index.md)。
 
