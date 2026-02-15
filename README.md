@@ -2,17 +2,26 @@
 
 ## 简介
 
-将Vercel的英文网站翻译为中文，从注册到付费的完整翻译（当然仍在开发中，期待词库的补充）
+将 Vercel 的英文界面翻译为中文。词库与脚本逻辑分离维护，欢迎补充词库。
 
-## 一键下载并跳转安装
+## 安装与启用
 
-请先阅读 [安装与启用](docs/repowiki/quickstart/install.md)。
+- 推荐安装脚本（点击会触发脚本管理器安装）：[VercelToChinese.user.js](https://raw.githubusercontent.com/GamblerIX/VercelToChinese/main/scripts/VercelToChinese.user.js)
 
+## 开发
 
-## 词库维护
+- 修改脚本：`scripts/VercelToChinese.user.js`
+- 修改词库：`i18n/zh-cn.json`
+- 本地快速去重（可选）：`python scripts/python/autoremove.py i18n/zh-cn.json`
 
+## 安全与许可证
 
-更多说明见 [RepoWiki](docs/repowiki/index.md)。
+- 本项目不包含账号收集/上传等逻辑，更多说明见 [安全与许可证](docs/repowiki/security-and-license.md)。
+- 仓库许可证为 AGPL-3.0（详见 [LICENSE](LICENSE)）。
+
+## 开发文档
+
+- 完整说明见 [RepoWiki](docs/repowiki/index.md)。
 
 
 ## 鸣谢
@@ -22,3 +31,4 @@
 [Vercel 汉化脚本 - 中文化界面](https://greasyfork.org/zh-CN/scripts/564229-vercel-%E6%B1%89%E5%8C%96%E8%84%9A%E6%9C%AC-%E4%B8%AD%E6%96%87%E5%8C%96%E7%95%8C%E9%9D%A2)
 
 [github-chinese](https://github.com/maboloshi/github-chinese)
+
