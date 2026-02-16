@@ -317,6 +317,7 @@
   "All": "全部",
   "All Guides": "所有指南",
   "All Hobby features, plus:": "所有个人版功能，加上：",
+  "All new teams have a default on-demand usage budget of $200 (which can be customized) and receive email, web, and SMS notifications as you reach that amount. When reaching 100%, you can optionally configure Vercel to automatically pause all projects with a hard limit.":"所有新团队默认拥有 200 美元的按需使用额度（可自定义），当使用量接近该额度时将通过邮件、网页或短信收到通知。达到 100% 后，可选择配置 Vercel 硬性支付上限以自动暂停所有项目。",
   "All of our results pages were developed and deployed on Vercel, and it was the smoothest election night anyone could remember.": "我们所有的结果页面都是在 Vercel 上开发和部署的，这是所有人记忆中最顺利的选举之夜。",
   "All plans": "所有计划",
   "All Pro features, plus:": "所有专业版功能，加上：",
